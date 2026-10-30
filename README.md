@@ -48,3 +48,21 @@ Finished building target: "Exercise_1_KundrandaPonnappa.out"
  
 
 **** Build Finished ****
+
+
+
+Feedback - Exercise 1
+Name: Yashika Kundranda Ponnappa
+
+Problems:
+- The first build failed because templateEMP.h was missing in the project.
+- It was not clear where to connect the blue LED D7. I only found out from
+  the board schematic that it is switched by the HEATER pin (X10).
+- I work on a Mac, so I had to set up CCS on a Windows laptop first.
+
+Positive:
+- Seeing the LEDs react to the buttons helped me understand PxDIR, PxIN,
+  PxOUT and PxREN, and the difference between polling and interrupts.
+
+Requests:
+- A small wiring picture of the board on the exercise sheet would help.
