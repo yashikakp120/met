@@ -1,0 +1,14 @@
+Feedback - Exercise 2
+Name: Yashika Kundranda Ponnappa
+
+Problems:
+- (write your own, e.g.) At first I did not understand that both shift
+  registers share the same clock, so the other register has to be in
+  "hold" mode while I clock one of them.
+
+Positive:
+- It was interesting to control LEDs and read buttons through a shift
+  register, and to see how a simple serial bus works.
+
+Requests:
+- (optional)
