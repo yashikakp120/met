@@ -1,0 +1,7 @@
+Feedback - Exercise 4
+Name: Yashika Kundranda Ponnappa
+
+- It was interesting to see how a relay can switch the same piezo between
+  a sensor circuit and a speaker.
+- Reading the schematic helped me understand what the op-amp buffer and
+  the comparator do.
