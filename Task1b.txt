@@ -1,66 +1,90 @@
-Exercise 4 - Task 1b
-Name: Yashika Kundranda Ponnappa
+==========================================================================
+ Exercise 4 - Task 1b
+ Yashika Kundranda Ponnappa
+==========================================================================
 
-1) Two advantages compared to the readout in Exercise Sheet 3
----------------------------------------------------------------
-- Adjustable, reliable detection without polling:
-  In Exercise 3 the piezo voltage was read directly with P3IN, so a knock
-  was only detected if the short pulse crossed the digital input threshold
-  of the pin exactly when the program was polling. Now a comparator compares
-  the piezo signal with a threshold set by the potentiometer P1 and gives a
-  clean digital edge on COMP_OUT. This edge triggers an interrupt, so no
-  knock is missed, the sensitivity can be adjusted, and the CPU does not
-  have to poll. It can sleep in LPM4 until a knock arrives, which saves
-  power.
+1. Two advantages compared to the readout in Exercise Sheet 3
+--------------------------------------------------------------------------
 
-- Separation and protection of the circuits:
-  In Exercise 3 the same pin was used as PWM output and as sensor input, so
-  the pin had to be reconfigured all the time and the piezo was connected
-  directly to the microcontroller pin. Now the relay physically separates
-  the two paths: the PWM output never drives the sensor input, and the
-  piezo signal only reaches the microcontroller through a high-impedance
-  buffer and the comparator. The microcontroller pin is protected from the
-  voltage spikes a piezo can produce when it is hit.
+Advantage 1: Reliable, adjustable and power-saving knock detection
+  - Exercise 3: the piezo was read directly with P3IN by polling. A knock
+    was only detected if the voltage crossed the digital input threshold
+    at the moment the program checked the pin.
+  - Exercise 4: a comparator compares the piezo signal with an adjustable
+    threshold (potentiometer P1) and outputs a clean digital signal on
+    COMP_OUT. This triggers an interrupt, so no knock is missed, the
+    sensitivity can be adjusted, and the microcontroller can sleep in LPM4
+    while waiting (lower power consumption).
 
-2) Signal flow and components
------------------------------
-Knock -> microcontroller:
-- Piezo buzzer (BUZZER1, RMP-14P): a knock bends the piezo element, which
-  produces a small voltage (piezoelectric effect). It is connected via R6
-  (1 kOhm) to X1 (BUZZER).
-- X1 is connected to the middle pin of CON4, the common contact of the
-  relay. With the relay OFF, the common contact is connected to the right
-  pin of CON4, which goes to DAC_IN (X2).
-- R24 (100 kOhm) and R41 (1 MOhm, selected with JP5 = VFO): R41 discharges
-  the piezo to ground so it does not keep a charge, and R24 limits the
-  current. (In the other JP5 position, C13 would form a low-pass/integrator
-  with R24 instead.)
-- IC5A (TS912 op-amp) as voltage follower (buffer): very high input
-  impedance, so it does not load the piezo, and low output impedance to
-  drive the next stage. Output is also available at DAC_OUT (X8).
-- IC5B (second TS912 op-amp) as comparator: compares the buffered piezo
-  signal (+ input) with the threshold voltage from potentiometer P1
-  (- input). If the signal is higher, the output goes high. The red LED D8
-  (with R26) shows when the comparator switches, which helps to adjust P1.
-- R25 (10 kOhm) limits the current into the microcontroller; the signal
-  leaves at COMP_OUT (X7).
-- COMP_OUT is connected to P1.3. A rising edge triggers the Port 1
-  interrupt and wakes the CPU from LPM4. The program counts the knocks for
-  one second: one knock = melody 1, two knocks = melody 2.
+Advantage 2: Separation of output and input path / protection of the pin
+  - Exercise 3: one pin was used both as PWM output and as sensor input,
+    so it had to be reconfigured all the time, and the piezo was connected
+    directly to the microcontroller pin.
+  - Exercise 4: the relay connects the buzzer either to the analog
+    front-end or to the PWM pin. The two paths do not influence each
+    other, and the piezo is no longer connected directly to the
+    microcontroller, which protects the pin from voltage spikes of the
+    piezo.
 
-Microcontroller -> buzzer:
-- The microcontroller sets P1.0 high, which is connected to REL_STAT (X5).
-- R11 (1 kOhm) and C12 (1 uF) drive the gate of the MOSFET T1 (BSS123);
-  R5 (100 kOhm) keeps the gate low when REL_STAT is not driven.
-- T1 switches the relay coil (RELAY1, 5 V, 178 Ohm) to ground. The diode
-  D13 (1N4148) is a freewheeling diode: it protects T1 from the high
-  voltage spike when the coil is switched off.
-- With the relay ON, the common contact switches to the left pin of CON4,
-  which is connected to P3.6.
-- Timer A0 generates the PWM signal on P3.6 (TA0.2, 50 % duty cycle). The
-  timer period sets the frequency of each note. The signal goes through
-  CON4 left -> relay -> X1 -> R6 -> piezo, which now works as a speaker and
-  plays the melody.
-- After the melody, P1.0 goes low, the relay switches back and the buzzer
-  is connected to the analog front-end again. The relay coil only uses
-  current while a melody is playing.
+
+2. Signal flow
+--------------------------------------------------------------------------
+
+a) Sensing (relay OFF): knock -> microcontroller
+
+   Piezo -> R6 -> X1 (BUZZER) -> CON4 middle -> relay -> CON4 right
+   -> X2 (DAC_IN) -> R24 / R41 -> op-amp buffer -> comparator (vs. P1)
+   -> R25 -> X7 (COMP_OUT) -> P1.3 (interrupt)
+
+   A knock makes the piezo produce a voltage. With the relay off, this
+   voltage reaches the analog front-end, is buffered, and is compared with
+   the threshold. If it is higher, COMP_OUT goes high and the rising edge
+   on P1.3 triggers an interrupt. The program counts the knocks within
+   one second (1 knock = melody 1, 2 knocks = melody 2).
+
+b) Playback (relay ON): microcontroller -> buzzer
+
+   P1.0 -> X5 (REL_STAT) -> R11 -> T1 -> relay coil (relay switches)
+   P3.6 (PWM, TA0.2) -> CON4 left -> relay -> CON4 middle -> X1 -> R6
+   -> piezo
+
+   The microcontroller sets P1.0 high, T1 switches on the relay, and the
+   buzzer is connected to P3.6. Timer A0 generates the PWM signal and the
+   piezo plays the melody. Afterwards P1.0 goes low, the relay switches
+   back, and the buzzer is connected to the analog front-end again.
+
+
+3. Significant components and their function
+--------------------------------------------------------------------------
+
+  Component             Function
+  --------------------  --------------------------------------------------
+  Piezo buzzer          Sensor: turns a knock into a voltage.
+  (BUZZER1)             Speaker: turns the PWM signal into sound.
+
+  Relay (RELAY1)        Switches the buzzer between the analog front-end
+                        (relay off) and the PWM pin (relay on).
+
+  T1 (BSS123)           MOSFET that switches the relay coil current,
+                        controlled by REL_STAT.
+
+  D13 (1N4148)          Freewheeling diode, protects T1 from the voltage
+                        spike when the relay coil is switched off.
+
+  R41 (1 MOhm, JP5      Discharges the piezo, so the signal returns to
+  on VFO)               0 V after a knock.
+
+  IC5A (TS912)          Voltage follower (buffer): high input impedance,
+                        does not load the piezo; drives the next stage.
+
+  IC5B (TS912)          Comparator: output high when the knock signal is
+                        higher than the threshold.
+
+  P1 (potentiometer)    Sets the threshold voltage = knock sensitivity.
+
+  D8 (red LED)          Shows when the comparator output is high.
+
+  R25 (10 kOhm)         Limits the current into the microcontroller pin.
+
+  Timer A0 (TA0.2)      Generates the PWM signal (50 % duty cycle); the
+                        period sets the frequency of each note.
