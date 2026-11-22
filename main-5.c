@@ -114,7 +114,9 @@ void main(void) {
   // ACLK from VLO, then start the watchdog with ACLK
   BCSCTL3 |= LFXT1S_2;
   BCSCTL1 |= DIVIDER;
+#ifndef MEASURE
   WDTCTL = WDTPW + WDTSSEL + WDTCNTCL;
+#endif
 
   // D5 output, PB5 input with pull-up
   P1DIR |= BIT0;
@@ -153,8 +155,10 @@ void main(void) {
       while (1);
     }
 
-    // feed the watchdog
+    // feed the watchdog (off while measuring, so the debugger can pause)
+#ifndef MEASURE
     WDTCTL = WDTPW + WDTSSEL + WDTCNTCL;
+#endif
 
     // blink D5 with 4 Hz (toggle every 125 ms)
     count++;
