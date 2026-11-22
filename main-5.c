@@ -25,7 +25,8 @@
  * Tasks Completed:
  * - Task 1:  4 Hz blinking, deadlock, reset after ~5.5 s   -> working
  * - Task 2a: reset after ~21.9 s (LONG_WDT)               -> working
- * - Task 2b: min / max measured (MEASURE), 5 ranges        -> working
+ * - Task 2b: min / max measured (MEASURE, serial console),
+ *            5 ranges on D1-D4 / D6                        -> working
  * - Task 2c: display every 2 s with Timer A0 interrupt     -> working
  * - Task 2d: controller with REL_STAT                      -> working
  * - Task 2e: controller with REL_DYN (DYNAMIC)             -> working
@@ -38,7 +39,7 @@
 // Switches (put // in front to turn one off)
 #define LONG_WDT    // on: reset after 21.9 s     off: 5.5 s
 #define DYNAMIC     // on: heater via REL_DYN     off: via REL_STAT
-#define MEASURE     // on: measure min/max (Task 2b), turn OFF for submission
+// #define MEASURE  // on: Task 2b measuring (heater on via REL_STAT, values on serial)
 
 // ACLK = VLO (~12 kHz) / divider. Watchdog resets after 32768 ACLK ticks.
 #ifdef LONG_WDT
@@ -49,7 +50,7 @@
   #define ACLK_HZ  6000
 #endif
 
-// Measured ADC values: room temperature / heater on. Split into 5 ranges.
+// Measured ADC values (Task 2b): room temperature / end of heating. 5 ranges.
 #define ADC_MIN  341
 #define ADC_MAX  682
 #define STEP     ((ADC_MAX - ADC_MIN) / 5)
@@ -59,7 +60,6 @@ volatile int range = 1;       // temperature range 1-5 (set in the ISR)
 #ifdef MEASURE
 int minValue = 1023;          // lowest ADC value
 int maxValue = 0;             // highest ADC value
-volatile int heatTime = 0;    // seconds of heating
 #endif
 
 // LEDs D1-D4 via shift register 2 (bit 0 = D1). D4 is shifted in first.
@@ -87,7 +87,13 @@ void thermometer(void) {
 #ifdef MEASURE
   if (value < minValue) minValue = value;
   if (value > maxValue) maxValue = value;
-  if (heatTime < 300) heatTime += 2;      // called every 2 s
+  serialPrint("ADC ");                    // shown in the serial terminal
+  serialPrintInt(value);
+  serialPrint("   min ");
+  serialPrintInt(minValue);
+  serialPrint("   max ");
+  serialPrintInt(maxValue);
+  serialPrintln("");
 #endif
 
   range = (value - ADC_MIN) / STEP + 1;
@@ -109,8 +115,7 @@ void main(void) {
 
   initMSP();                  // also stops the watchdog
 
-  // Watchdog with ACLK from VLO (not used while measuring,
-  // so the debugger can pause the program)
+  // Watchdog with ACLK from VLO (not used in measuring mode)
   BCSCTL3 |= LFXT1S_2;        // ACLK = VLO
   BCSCTL1 |= DIVIDER;
 #ifndef MEASURE
@@ -165,12 +170,12 @@ void main(void) {
       count = 0;
     }
 
-    // Controller: heat in range 1-3, stop in 4-5
 #ifdef MEASURE
-    heat = (heatTime < 300);  // heat 5 min, then stop (D7 off = done)
+    // Task 2b: heater always on with the static input REL_STAT
+    P3OUT |= BIT4;
 #else
+    // Controller: heat in range 1-3, stop in 4-5
     heat = (range <= 3);
-#endif
 
 #ifdef DYNAMIC
     // REL_DYN: relay only stays on with a ~1 kHz signal. It is made here,
@@ -181,6 +186,7 @@ void main(void) {
     // REL_STAT: high level = relay on (stays on if the program hangs)
     if (heat) P3OUT |= BIT4;
     else P3OUT &= ~BIT4;
+#endif
 #endif
 
     __delay_cycles(500);      // 0.5 ms
