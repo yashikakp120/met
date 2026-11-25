@@ -1,8 +1,4 @@
-Feedback - Exercise 5
-Name: Yashika Kundranda Ponnappa
-
-- The watchdog times were not exactly 5.5 s and 21.9 s on my board,
-  because the VLO clock is not very precise.
-- Heating up the NTC to find the maximum ADC value took quite long.
-- I liked testing the deadlock with REL_DYN: the relay switched off
-  right away, which showed why dynamic control is safer.
+// values I measured in task 2b (MEASURE mode, read with the debugger)
+// min = room temperature, max = heater on until the value stopped rising
+#define ADC_MIN 354
+#define ADC_MAX 675
