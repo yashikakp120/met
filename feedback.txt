@@ -1,4 +1,7 @@
-// values I measured in task 2b (MEASURE mode, read with the debugger)
-// min = room temperature, max = heater on until the value stopped rising
-#define ADC_MIN 354
-#define ADC_MAX 675
+
+#ifdef DYNAMIC_RELAY
+    // REL_STAT and REL_DYN go to the same transistor gate. If P3.4 drives
+    // low, it pulls the gate down through R11 and the relay never turns on.
+    // So in dynamic mode P3.4 must be an input (not driving anything).
+    P3DIR &= ~BIT4;
+#endif
